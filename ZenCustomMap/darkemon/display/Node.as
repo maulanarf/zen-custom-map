@@ -14,226 +14,95 @@ if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 */
 package darkemon.display {
 	
+	import darkemon.events.NodeEvent;
+	import darkemon.ui.NodeMenu;
+	
+	import flash.display.Bitmap;
 	import flash.display.DisplayObject;
 	import flash.display.Loader;
-	import flash.display.Sprite;
-	import flash.display.Shape;
-		
-	import flash.filters.DropShadowFilter;
-	
-	import flash.ui.ContextMenu;
-	import flash.ui.ContextMenuItem;
-		
-	import flash.text.TextField;
-	import flash.text.TextFormat;
-	import flash.text.TextFieldAutoSize;
-	
-	import flash.net.URLRequest;
-	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
-	import flash.events.IOErrorEvent;
 	import flash.events.MouseEvent;
-		
-	import darkemon.events.NodeEvent;
+	import flash.net.URLLoader;
+	import flash.net.URLRequest;
+	import flash.net.URLRequestMethod;
 	
-	public class Node extends Sprite {
-				
+	import mx.collections.ArrayCollection;
+	import mx.controls.Alert;
+	import mx.core.UIComponent;
+	
+	import spark.components.Group;
+	import spark.components.Image;
+	import spark.components.Label;
+	
+	public class Node extends Group {
+		
+	//--------------------------------------
+	//  Static Properties
+	//--------------------------------------
+		
+		public static const MULTIPLE_SELECTION:String = "multipleSelection";
+		public static const SINGLE_SELECTION:String = "singleSelection";
+		
+		public static const CRITICAL_STATE:int = 5;
+		public static const ERROR_STATE:int = 4;
+		public static const WARNING_STATE:int = 3;
+		public static const CLEAR_STATE:int = 0;
+		
+		private static var _selectedNodes:ArrayCollection = new ArrayCollection();
+		private static var _selectionMode:String = SINGLE_SELECTION;
+
 	//--------------------------------------
 	//  Properties
 	//--------------------------------------
-	
-		public static const CRITICAL_STATE : int = 5;
-		public static const ERROR_STATE : int = 4;
-		public static const WARNING_STATE : int = 3;
-		public static const CLEAR_STATE : int = 0;
-	
-		private static var _textSize : int = 18;
 
-		private var _id : int;
-		private var _color : int = 0X00CC00; // green
-		private var _ip : String;
-		private var _zpath : String;
-		private var _image : DisplayObject = null;
-		private var _imageName : String = null;
-		
-		private var nameField : Sprite = new Sprite();
-		private var txtField : TextField = new TextField();
-		private var _textMargin : int = 0;
-		
-		private var contMenu : ContextMenu;
-		private var prefItem : ContextMenuItem;
-		private var imageLibItem : ContextMenuItem;
-		private var linkItem : ContextMenuItem;
+		private var _id:int;
+		private var _color:int = 0X00CC00; // green
+		private var _backAreaColor:int = 0x25f97f; // light green
+		private var _ip:String;
+		private var _zenClass:String;
+		private var _image:Image = new Image();
+		private var _imageName:String = null;
+		private var _select:Boolean = false;
+		private var _type:String = "node";
+		private var _subMapUid:uint = undefined; // for node type 'submap'
+
+		private var backArea:UIComponent = new UIComponent();
+		private var displayLabel:Label = new Label();
+		private var messageField:Label = new Label();
 		
 	//--------------------------------------
 	//  Constructor
 	//--------------------------------------
 		
-		public function Node(id : int) 
+		public function Node(nId:int) 
 		{
-			_id = id; // Set id.
-			init();
-			setContextMenu();
-		}
-		
-	//--------------------------------------
-	//  Public Methods
-	//--------------------------------------
-		
-		/* Set and get value of the node ID. */
-		public function get id() : int { return _id; }
-		public function set id(id : int) : void { _id = id; }
-				
-		/* Set and get value of the node name. */
-		public function get nodeName() : String { return txtField.text; }
-		public function set nodeName(s : String) : void {
-			txtField.text = s;
-			updateNameField(_textMargin);
-		}
-		
-		/* Set and get value of the background color. */
-		public function get defaultColor() : int { return _color; }
-		public function set defaultColor(c : int) : void { _color = c; }
-		
-		public function get imageName() : String { return _imageName; }
-		public function getImage() : DisplayObject { return _image; }
-		
-		public function setImage(i : DisplayObject, imgName : String) : void 
-		{
-			if(_image != null) removeChild(_image);
-
-			if(imgName == null) throw Error("Image name can't be null!");
-			_imageName = imgName;
-			
-			if(i == null) throw Error("Image can't be null!");
-			_image = i;
-			
-			addChild(_image);
+			_id = nId;
+			toolTip = "Double click for open menu";
+					
+			_image.height = _image.width = 40;
+			_image.x = _image.y = 0;
 			_image.x -= _image.width / 2;
 			_image.y -= _image.height / 2;
-			updateNameField(_image.height/2);
-		}
-		
-		public function deleteImage() : void {
-			if(_image != null) removeChild(_image);
-			_image = null;
-			_image = drawDefaultImage();
-			addChild(_image);
-			_imageName = null;
-			updateNameField(5);
-		}
-		
-		public function get ip() : String { return _ip; }
-		public function set ip(ipAddress : String) : void { _ip = ipAddress; }
-		
-		public function get zpath() : String { return _zpath; }
-		public function set zpath(path : String) : void { _zpath = path; }
-		
-		/* Use this method before deleting the node. */
-		public function free() : void {
-			// Remove childs.
-			removeChild(_image);
-			removeChild(nameField);
-			_image = null;
-			nameField = null;
 			
-			// Delete listeners.
-			setActive(false);
-		}
+			drawDefaultImage();
+			addElement(backArea);
+			addElement(_image);
+			addElement(displayLabel);
+			addElement(messageField);
 			
-		public function setActive(active : Boolean) : void {
-			if(active) {
-				addEventListener(MouseEvent.MOUSE_OVER, mouseListener);
-				addEventListener(MouseEvent.MOUSE_OUT, mouseListener);
-				addEventListener(MouseEvent.MOUSE_DOWN, mouseListener);
-				addEventListener(MouseEvent.MOUSE_UP, mouseListener);
-			} else {
-				removeEventListener(MouseEvent.MOUSE_OVER, mouseListener);
-				removeEventListener(MouseEvent.MOUSE_OUT, mouseListener);
-				removeEventListener(MouseEvent.MOUSE_DOWN, mouseListener);
-				removeEventListener(MouseEvent.MOUSE_UP, mouseListener);
-			}
-		}
-		
-		public function set eventState(st : int) : void {
-			switch(st)
-			{
-				case CRITICAL_STATE:
-					filters = [new DropShadowFilter(0,90,0xFF0000,1,4,4,40)];
-					break;
-					
-				case ERROR_STATE:
-					filters = [new DropShadowFilter(0,90,0xFF9900,1,4,4,40)];
-					break;
-				
-				case WARNING_STATE:
-					filters = [new DropShadowFilter(0,90,0xFFFF00,1,4,4,40)];
-					break;
-				
-				case CLEAR_STATE:
-					filters = null;
-					break;
-			}
-		}
-		
-		public function loadImageURL(url : URLRequest, imgName : String) : void {
+			displayLabel.setStyle("textAlign", "center");
+			displayLabel.setStyle("fontWeight", "bold");
+			displayLabel.setConstraintValue("horizontalCenter", 0);
+			displayLabel.setConstraintValue("top", _image.height/2+5);
 			
-			var loader : Loader = new Loader();
-			loader.contentLoaderInfo.addEventListener(Event.INIT, initListener);
-			loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, errorListener);
-			loader.load(url);
-									
-			function initListener(e : Event) : void {
-				setImage(loader.content, imgName);
-			}
-			
-			function errorListener(e : IOErrorEvent) : void {
-				trace("darkemon::display::Node::loadImageURL\n"+e.text);
-			}
-		}
-		
-	//--------------------------------------
-	//  Private Methods
-	//--------------------------------------
-		
-		private function drawDefaultImage() : Sprite {
-			var circle : Sprite = new Sprite();
-			circle.graphics.clear();
-			circle.graphics.lineStyle(1);
-			circle.graphics.beginFill(_color);
-			circle.graphics.drawCircle(0, 0, 10);
-			return circle;
-		}
-						
-		private function updateNameField(margin : int) : void {
-			if(nameField.parent != null) {
-				removeChild(nameField);
-				nameField.width = txtField.textWidth;
-				addChild(nameField);
-			}
-			nameField.y -= _textMargin;
-			nameField.y += margin;
-			_textMargin = margin;
-		}
-		
-		private function init() : void {
-			// Set the default image.
-			_image = drawDefaultImage();
-			addChild(_image);
-			
-			// Set name field.
-			var format : TextFormat = new TextFormat();
-			format.size = _textSize;
-			txtField.defaultTextFormat = format;
-			txtField.autoSize = TextFieldAutoSize.CENTER;
-			txtField.filters = [new DropShadowFilter(1,90,0xffffff,0.8,4,4,10)];
-			txtField.text = "";
-			txtField.x = x - txtField.width/2;
-			txtField.y = y + txtField.height/2;
-			updateNameField(5);
-			nameField.addChild(txtField);
-			addChild(nameField);
-			
+			messageField.setStyle("textAlign", "center");
+			messageField.setStyle("fontWeight", "bold");
+			messageField.setStyle("fontSize", "14");
+			messageField.setStyle("color", "#FF0000");
+			messageField.setConstraintValue("horizontalCenter", 0);
+			messageField.setConstraintValue("top",
+				_image.height/2+24);
+
 			// Set button mode.
 			doubleClickEnabled = true;
 			buttonMode = true;
@@ -242,22 +111,194 @@ package darkemon.display {
 			
 			// Add listeners.
 			setActive(true);
+			
+			updateBackArea();
 		}
 		
-		private function setContextMenu() : void {
-			contMenu = new ContextMenu();
-			prefItem = new ContextMenuItem("Node preferences");
-			imageLibItem = new ContextMenuItem("Image");
-			linkItem = new ContextMenuItem("Events");
+	//--------------------------------------
+	//  Public Static Methods
+	//--------------------------------------
+		
+		public static function get selectionMode():String {
+			return _selectionMode;
+		}
+		
+		public static function set selectionMode(m:String):void {
+			_selectionMode = m;
+		}
+		
+		public static function unselectAll():void {
+			if(_selectedNodes.length != 0) {
+				for each(var n:Node in _selectedNodes) {
+					n.clearSelect();
+				}
+				_selectedNodes.removeAll();
+			}
+		}
+		
+	//--------------------------------------
+	//  Public Methods
+	//--------------------------------------
+		
+		/* Set and get value of the node ID. */
+		public function get nodeId():int { return _id; }
+		public function set nodeId(nId:int):void { _id = nId; }
+		
+		public function get select():Boolean { return _select; }
+		public function set select(flag:Boolean):void {
+			switch(_selectionMode) {
+				case MULTIPLE_SELECTION:
+					if(flag && !_select) _selectedNodes.addItem(this);
+					if(!flag && _select) {
+						var i:int = _selectedNodes.getItemIndex(this);
+						_selectedNodes.removeItemAt(i);
+					}
+					break; 
+				case SINGLE_SELECTION:
+					unselectAll();
+					if(flag && !_select) _selectedNodes.addItem(this);
+					break;
+			}
+			_select = flag;
+			updateBackArea();
+		}
+		
+		public function get type():String { return _type; }
+		public function set type(t:String):void { 
+			_type = t;
+			if(_type == "node") {
+				_subMapUid = undefined;
+			} else {
+				_ip = null;
+				_zenClass = null;
+			}
+			updateBackArea();
+		}
+		
+		/* Set and get value of the node name. */
+		public function get nodeName():String { return displayLabel.text; }
+		public function set nodeName(s:String):void { displayLabel.text = s; }
+		
+		/* Set and get value of the background color. */
+		public function get defaultNodeColor():int { return _color; }
+		public function set defaultNodeColor(c:int):void { _color = c; }
+		
+		public function get message():String { return messageField.text; }
+		public function set message(t:String):void { messageField.text = t; }
+		
+		public function get imageName():String { return _imageName; }
+		public function getImage():UIComponent { return _image; }
+		
+		public function setImage(img:Object, imgName:String):void 
+		{
+			if(img != null && imgName == null) throw Error(
+				"darkemon::display::Node::setImage()\nImage name can't be null!");
 			
-			contMenu.hideBuiltInItems();
-			contMenu.customItems.push(prefItem);
-			contMenu.customItems.push(imageLibItem);
-			contMenu.customItems.push(linkItem);
-			prefItem.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, selectItemHandler);
-			imageLibItem.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, selectItemHandler);
-			linkItem.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, selectItemHandler);
-			contextMenu = contMenu;
+			if(img == null) {
+				_imageName = null;
+				drawDefaultImage();
+			} else {
+				_imageName = imgName;
+				_image.graphics.clear();
+			}
+			_image.source = img;
+		}
+		
+		public function get ip():String { return _ip; }
+		public function set ip(ipAddress:String):void { _ip = ipAddress; }
+		
+		public function get zenClass():String { return _zenClass; }
+		public function set zenClass(path:String):void { _zenClass = path; }
+		
+		public function get submapUid():uint { return _subMapUid; }
+		public function set submapUid(uid:uint):void { _subMapUid = uid; }
+		
+		/* Use this method before deleting the node. */
+		public function free() : void {
+			// Remove childs.
+			removeElement(backArea);
+			removeElement(_image);
+			removeElement(displayLabel);
+			_image = null;
+			
+			// Delete listeners.
+			setActive(false);
+		}
+			
+		public function setActive(active:Boolean):void {
+			if(active) {
+				addEventListener(MouseEvent.MOUSE_OVER, mouseListener);
+				addEventListener(MouseEvent.MOUSE_OUT, mouseListener);
+				addEventListener(MouseEvent.MOUSE_DOWN, mouseListener);
+				addEventListener(MouseEvent.MOUSE_UP, mouseListener);
+				addEventListener(MouseEvent.DOUBLE_CLICK, mouseListener);
+			} else {
+				removeEventListener(MouseEvent.MOUSE_OVER, mouseListener);
+				removeEventListener(MouseEvent.MOUSE_OUT, mouseListener);
+				removeEventListener(MouseEvent.MOUSE_DOWN, mouseListener);
+				removeEventListener(MouseEvent.MOUSE_UP, mouseListener);
+				removeEventListener(MouseEvent.DOUBLE_CLICK, mouseListener);
+			}
+		}
+		
+		public function set eventState(s:int):void {
+			switch(s)
+			{
+				case CRITICAL_STATE:
+					_backAreaColor = 0xed4119;
+					break;
+					
+				case ERROR_STATE:
+					_backAreaColor = 0xf18c32;
+					break;
+				
+				case WARNING_STATE:
+					_backAreaColor = 0xf2d82b;
+					break;
+				
+				case CLEAR_STATE:
+					_backAreaColor = 0x25f97f;
+					break;
+			}
+			updateBackArea();
+		}
+		
+	//--------------------------------------
+	//  Protected Methods
+	//--------------------------------------
+		
+		protected function clearSelect():void {
+			_select = false;
+			updateBackArea();
+		}
+		
+	//--------------------------------------
+	//  Private Methods
+	//--------------------------------------
+		
+		private function drawDefaultImage():void {
+			_image.graphics.clear();
+			_image.graphics.lineStyle(1);
+			_image.graphics.beginFill(_color);
+			_image.graphics.drawCircle(_image.width/2, _image.height/2, 10);
+		}
+				
+		private function updateBackArea():void {
+			if(_image != null) {
+				backArea.graphics.clear();
+				backArea.graphics.lineStyle(_select?2:0, 0x000000, _select?1:0);
+				backArea.graphics.beginFill(_backAreaColor, 0.7);
+				switch(_type) {
+					case "node":
+						backArea.graphics.drawCircle(0, 0, 
+							(Math.max(_image.height,_image.width)/2)+10);
+						break;
+					case "submap":
+						var size:int = Math.max(_image.height,_image.width)+30;
+						backArea.graphics.drawRoundRect(-size/2, -size/2, size, size, 5, 5);
+						break;
+				}
+			}
 		}
 			
 	//--------------------------------------
@@ -266,37 +307,25 @@ package darkemon.display {
 			
 		// The mouse events listener.
 		private function mouseListener(e : MouseEvent) : void {
-			if( !(e.target is TextField) ) {
+			if( !(e.target is Label) ) {
 				switch(e.type)
 				{
+					case MouseEvent.DOUBLE_CLICK:
+						NodeMenu.show(this);
+						break;
 					case MouseEvent.MOUSE_OVER:
-						//drawSelectNode();
 				    	break;
 					case MouseEvent.MOUSE_OUT:
-				    	//drawUnselectNode();
 						break;
 					case MouseEvent.MOUSE_DOWN:
+						unselectAll();
+						select = true;
 						startDrag();
 						break;
 					case MouseEvent.MOUSE_UP:
 						stopDrag();
 						break;
 				}
-			}
-		}
-		
-		private function selectItemHandler(e : ContextMenuEvent) : void {
-			switch(e.target) 
-			{
-				case prefItem:
-					dispatchEvent(new NodeEvent(NodeEvent.OPEN_PREF, true, false));
-					break;
-				case imageLibItem:
-					dispatchEvent(new NodeEvent(NodeEvent.OPEN_LIBRARY, true, false));
-					break;
-				case linkItem:
-					dispatchEvent(new NodeEvent(NodeEvent.OPEN_LINK, true, false));
-					break;
 			}
 		}
 	}

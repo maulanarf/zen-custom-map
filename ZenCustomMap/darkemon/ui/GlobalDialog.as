@@ -41,7 +41,7 @@ package darkemon.ui {
 	import flash.events.MouseEvent;
 	import flash.events.ProgressEvent;
 	
-	import darkemon.Global;
+	import darkemon.GlobalEx;
 
 	public class GlobalDialog extends Sprite {
 		
@@ -53,7 +53,7 @@ package darkemon.ui {
 		private static var _allowInstantiation : Boolean = false;
 		private static var _isVisible : Boolean = false;
 		
-		private static var _glob : Global;
+		private static var _glob : GlobalEx;
 	
 		private static var lineFormItem : FormItem;
 		private static var mainForm : Form;
@@ -95,7 +95,7 @@ package darkemon.ui {
 			return _isVisible;
 		}
 	
-		public static function show(p : MovieClip, glob : Global) : void {
+		public static function show(p : MovieClip, glob : GlobalEx) : void {
 			if(_instance == null) {
 				getInstance();
 			}

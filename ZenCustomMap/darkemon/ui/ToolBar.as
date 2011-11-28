@@ -1,4 +1,4 @@
-﻿/*
+/*
 This program is the add-on for a Zenoss monitoring system.
 Copyright (C) 2011 Krasotin Artem
 
@@ -13,55 +13,72 @@ You should have received a copy of the GNU General Public License along with thi
 if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 package darkemon.ui {
-	import fl.controls.Button;
-	import fl.controls.ComboBox;
-	import flash.display.Sprite;
-	import flash.events.Event;
-	import flash.events.MouseEvent;
-	import flash.utils.Dictionary;
-	
-	import darkemon.ui.ToolTip;
+	import darkemon.components.DropDownButtonList;
 	import darkemon.events.ToolBarEvent;
 	
-	/*
-	* Class ToolBar is a singleton.
-	*
-	*
-	*/
+	import flash.events.Event;
+	import flash.events.MouseEvent;
 	
-	public class ToolBar extends Sprite {
+	import mx.collections.ArrayCollection;
+	
+	import spark.components.Button;
+	import spark.components.DropDownList;
+	import spark.components.HGroup;
+	import spark.components.ToggleButton;
+	import spark.events.IndexChangeEvent;
+	
+	public class ToolBar extends HGroup {
 		
 	//--------------------------------------
 	//  Properties
 	//--------------------------------------
 		
-		private static var _instance : ToolBar = null;
-		private static var _allowInstantiation : Boolean = false;
+		private static var _instance:ToolBar = null;
+		private static var _allowInstantiation:Boolean = false;
 		
-		private static var panBtn : Button      = new Button();
-		private static var moveNodeBtn : Button = new Button();
-		private static var addNodeBtn : Button  = new Button();
-		private static var delNodeBtn : Button  = new Button();
-		private static var addEdgeBtn : Button  = new Button();
-		private static var delEdgeBtn : Button  = new Button();
+		private static var panBtn:ToggleButton = new ToggleButton();
+		private static var moveNodeBtn:ToggleButton = new ToggleButton();
+		private static var addNodeBtn:ToggleButton = new ToggleButton();
+		private static var delNodeBtn:ToggleButton = new ToggleButton();
+		private static var addEdgeBtn:ToggleButton = new ToggleButton();
+		private static var delEdgeBtn:ToggleButton = new ToggleButton();
+		private static var saveBtn:Button = new Button();
+		private static var prefBtn:Button = new Button();
+		private static var nodeToolBtnList:DropDownButtonList = new DropDownButtonList();
+		private static var edgeToolBtnList:DropDownButtonList = new DropDownButtonList();
+		private static var scaleBox:DropDownList = new DropDownList();
 		
-		private static var saveBtn : Button = new Button();
-		private static var prefBtn : Button = new Button();
-		private static var scaleBox : ComboBox = new ComboBox();
-				
-		private static var selectedButton  : Button;
-		private static var displayedButton : Dictionary = new Dictionary();
+		private static var currentSelectedBtn:ToggleButton = new ToggleButton();
+		
+		[Embed(source='assets/grab_hand_icon.png')]
+		public static var MoveMapIcon:Class;
+		[Embed(source='assets/move_node_icon.png')]
+		public static var MoveNodeIcon:Class;
+		[Embed(source='assets/add_node_icon.png')]
+		public static var AddNodeIcon:Class;
+		[Embed(source='assets/del_node_icon.png')]
+		public static var DelNodeIcon:Class;
+		[Embed(source='assets/add_edge_icon.png')]
+		public static var AddEdgeIcon:Class;
+		[Embed(source='assets/del_edge_icon.png')]
+		public static var DelEdgeIcon:Class;
+		[Embed(source='assets/gear_icon.png')]
+		public static var PrefIcon:Class;
+		[Embed(source='assets/diskette_icon.png')]
+		public static var SaveIcon:Class;
 		
 	//--------------------------------------
 	//  Constructor
 	//--------------------------------------
-	
-		public function ToolBar()
-		{
+		
+		public function ToolBar() {
 			if(!_allowInstantiation) {
 				throw Error("ToolBar is a singleton class, use getInstance() instead.");
 			}
 			
+			gap = 5;
+			
+			// Clear buttons label.
 			panBtn.label = "";
 			moveNodeBtn.label = "";
 			addNodeBtn.label = "";
@@ -71,119 +88,86 @@ package darkemon.ui {
 			saveBtn.label = "";
 			prefBtn.label = "";
 			
-			panBtn.alpha = 100;
-			moveNodeBtn.alpha = 100;
-			addNodeBtn.alpha = 100;
-			delNodeBtn.alpha = 100;
-			addEdgeBtn.alpha = 100;
-			delEdgeBtn.alpha = 100;
-			saveBtn.alpha = 100;
-			prefBtn.alpha = 100;
-			scaleBox.alpha = 100;
+			// Add tool tips.
+			panBtn.toolTip = "Move map";
+			moveNodeBtn.toolTip = "Move and edit node";
+			addNodeBtn.toolTip = "Add node";
+			delNodeBtn.toolTip = "Delete node";
+			addEdgeBtn.toolTip = "Add edge";
+			delEdgeBtn.toolTip = "Delete edge";
+			saveBtn.toolTip = "Save map";
+			prefBtn.toolTip = "Map settings";
+			scaleBox.toolTip = "Map scale";
 			
-			panBtn.toggle = true;
-			moveNodeBtn.toggle = true;
-			addNodeBtn.toggle = true;
-			delNodeBtn.toggle = true;
-			addEdgeBtn.toggle = true;
-			delEdgeBtn.toggle = true;
+			// Set buttons size.
+			panBtn.width = panBtn.height = 24;
+			moveNodeBtn.width = moveNodeBtn.height = 24;
+			addNodeBtn.width = addNodeBtn.height = 24;
+			delNodeBtn.width = delNodeBtn.height = 24;
+			addEdgeBtn.width = addEdgeBtn.height = 24;
+			delEdgeBtn.width = delEdgeBtn.height = 24;
+			saveBtn.width = saveBtn.height = 24;
+			prefBtn.width = prefBtn.height = 24;
+			scaleBox.height = 24;
+			scaleBox.width = 72;
 			
-			panBtn.setSize(25,25);
-			moveNodeBtn.setSize(25,25);
-			addNodeBtn.setSize(25,25);
-			delNodeBtn.setSize(25,25);
-			addEdgeBtn.setSize(25,25);
-			delEdgeBtn.setSize(25,25);
-			saveBtn.setSize(25,25);
-			prefBtn.setSize(25,25);
+			// Set icons.
+			panBtn.setStyle("icon", MoveMapIcon);
+			moveNodeBtn.setStyle("icon", MoveNodeIcon);
+			addNodeBtn.setStyle("icon", AddNodeIcon);
+			delNodeBtn.setStyle("icon", DelNodeIcon);
+			addEdgeBtn.setStyle("icon", AddEdgeIcon);
+			delEdgeBtn.setStyle("icon", DelEdgeIcon);
+			saveBtn.setStyle("icon", SaveIcon);
+			prefBtn.setStyle("icon", PrefIcon);
 			
-			panBtn.setStyle("icon", GrabHandSkin);
-			moveNodeBtn.setStyle("icon", MoveNodeSkin);
-			addNodeBtn.setStyle("icon", AddNodeSkin);
-			delNodeBtn.setStyle("icon", DelNodeSkin);
-			addEdgeBtn.setStyle("icon", AddEdgeSkin);
-			delEdgeBtn.setStyle("icon", DelEdgeSkin);
-			saveBtn.setStyle("icon", SaveSkin);
-			prefBtn.setStyle("icon", PrefSkin);
+			// Fill drop down button lists.
+			nodeToolBtnList.addButton(moveNodeBtn);
+			nodeToolBtnList.addButton(addNodeBtn);
+			nodeToolBtnList.addButton(delNodeBtn);
 			
-			scaleBox.height = 25;
-			scaleBox.width = 65;
-			scaleBox.addItem({label:"25%"});
-			scaleBox.addItem({label:"50%"});
-			scaleBox.addItem({label:"75%"});
-			scaleBox.addItem({label:"100%"});
-			scaleBox.addItem({label:"200%"});
-			scaleBox.addItem({label:"300%"});
-			scaleBox.addItem({label:"400%"});
+			edgeToolBtnList.addButton(addEdgeBtn);
+			edgeToolBtnList.addButton(delEdgeBtn);
+			
+			// Fill scale list.
+			scaleBox.dataProvider = new ArrayCollection([
+				{"label":"25%","delta":0.25},
+				{"label":"50%","delta":0.5},
+				{"label":"75%","delta":0.75},
+				{"label":"100%","delta":1},
+				{"label":"200%","delta":2},
+				{"label":"300%","delta":3},
+				{"label":"400%","delta":4}]);
 			scaleBox.selectedIndex = 3;
 			
-			panBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
-			moveNodeBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
-			addNodeBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
-			delNodeBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
-			addEdgeBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
-			delEdgeBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
-			saveBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
-			prefBtn.addEventListener(MouseEvent.CLICK, clickOnButtonListener);
+			// Add listeners.
+			panBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			moveNodeBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			addNodeBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			delNodeBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			addEdgeBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			delEdgeBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			saveBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			prefBtn.addEventListener(MouseEvent.CLICK, clickListener);
+			scaleBox.addEventListener(IndexChangeEvent.CHANGE, changeScaleHandler);
 			
-			panBtn.addEventListener(MouseEvent.MOUSE_OVER, overButtonListener);
-			panBtn.addEventListener(MouseEvent.MOUSE_OUT, overButtonListener);
-			saveBtn.addEventListener(MouseEvent.MOUSE_OVER, overButtonListener);
-			saveBtn.addEventListener(MouseEvent.MOUSE_OUT, overButtonListener);
-			prefBtn.addEventListener(MouseEvent.MOUSE_OVER, overButtonListener);
-			prefBtn.addEventListener(MouseEvent.MOUSE_OUT, overButtonListener);
-			
-			moveNodeBtn.addEventListener(MouseEvent.MOUSE_OVER, overNodeButtonListener);
-			addNodeBtn.addEventListener(MouseEvent.MOUSE_OVER, overNodeButtonListener);
-			delNodeBtn.addEventListener(MouseEvent.MOUSE_OVER, overNodeButtonListener);
-
-			moveNodeBtn.addEventListener(MouseEvent.MOUSE_OUT, overNodeButtonListener);
-			addNodeBtn.addEventListener(MouseEvent.MOUSE_OUT, overNodeButtonListener);
-			delNodeBtn.addEventListener(MouseEvent.MOUSE_OUT, overNodeButtonListener);
-			
-			addEdgeBtn.addEventListener(MouseEvent.MOUSE_OVER, overEdgeButtonListener);
-			delEdgeBtn.addEventListener(MouseEvent.MOUSE_OVER, overEdgeButtonListener);
-			
-			addEdgeBtn.addEventListener(MouseEvent.MOUSE_OUT, overEdgeButtonListener);
-			delEdgeBtn.addEventListener(MouseEvent.MOUSE_OUT, overEdgeButtonListener);
-			
-			scaleBox.addEventListener(Event.CHANGE, changeScaleListener);
-			
-			addChild(panBtn);
-			addChild(moveNodeBtn);
-			addChild(addNodeBtn);
-			addChild(delNodeBtn);
-			addChild(addEdgeBtn);
-			addChild(delEdgeBtn);
-			addChild(saveBtn);
-			addChild(prefBtn);
-			addChild(scaleBox);
-			
-			panBtn.move(0, 0);
-			moveNodeBtn.move(30, 0);
-			addNodeBtn.move(30, 25);
-			delNodeBtn.move(30, 50);
-			addEdgeBtn.move(60, 0);
-			delEdgeBtn.move(60, 25);
-			
-			saveBtn.move(90, 0);
-			prefBtn.move(120, 0);
-			scaleBox.move(150, 0);
-			
-			selectedButton = panBtn;
-			selectedButton.selected = true;
-			displayedButton["node"] = moveNodeBtn;
-			displayedButton["edge"] = addEdgeBtn;
-			
-			setUpDropDownButton("node", moveNodeBtn);
-			setUpDropDownButton("edge", addEdgeBtn);
+			// Add buttons to scene.
+			addElement(panBtn);
+			addElement(nodeToolBtnList);
+			addElement(edgeToolBtnList);
+			addElement(prefBtn);
+			addElement(saveBtn);
+			addElement(scaleBox);
+		
+			// Select first button.
+			panBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
 		}
 		
 	//--------------------------------------
 	//  Public Methods
 	//--------------------------------------
 		
-		public static function getInstance() : ToolBar {
+		public static function getInstance():ToolBar {
 			if(!_instance) {
 				_allowInstantiation = true;
 				_instance = new ToolBar();
@@ -192,197 +176,71 @@ package darkemon.ui {
 			return _instance;
 		}
 		
-		public function currentScaleBoxIndex(i : int) : void {
+		public function get selectedScaleBoxIndex():int {
+			return scaleBox.selectedIndex;
+		}
+		
+		public function set selectedScaleBoxIndex(i:int):void {
 			scaleBox.selectedIndex = i;
-		}
-		
-		override public function get width() : Number {
-			return panBtn.x + scaleBox.x + scaleBox.width;
-		}
-		
-		override public function set height(w : Number) : void {
-			throw Error("Property height is only for read.");
+			scaleBox.dispatchEvent(new IndexChangeEvent(IndexChangeEvent.CHANGE));
 		}
 		
 	//--------------------------------------
 	//  Private Methods
 	//--------------------------------------
 		
-		private static function visibleAllDropDownButtons(type : String, flag : Boolean) : void 
-		{
-			switch(type) {
-				case "node":
-					addNodeBtn.visible = flag;
-					delNodeBtn.visible = flag;
-					moveNodeBtn.visible = flag;
-					break;
-				case "edge":
-					addEdgeBtn.visible = flag;
-					delEdgeBtn.visible = flag;
-					break;
-			}
-		}
-				
-		/* To display the button from the list of buttons. */
-		private static function setUpDropDownButton(type : String, btn : Button) : void 
-		{
-			var tmpX : Number = btn.x;
-			var tmpY : Number = btn.y;
-			btn.x = displayedButton[type].x;
-			btn.y = displayedButton[type].y;
-			displayedButton[type].x = tmpX;
-			displayedButton[type].y = tmpY;
-			displayedButton[type] = btn;
-			visibleAllDropDownButtons(type, false);
-			displayedButton[type].visible = true;
-		}
 		
-		//--------------------------
-		//    Listeners.
-		//--------------------------
 		
-		private static function overButtonListener(e : MouseEvent) : void {
-			switch(e.type) 
+	//--------------------------------------
+	//  Handlers
+	//--------------------------------------
+		
+		private function clickListener(e:MouseEvent):void {
+			if(e.target is ToggleButton) 
 			{
-				case MouseEvent.MOUSE_OVER:
-					switch(e.target) {
+				var btn:ToggleButton = e.target as ToggleButton;
+				if(btn != currentSelectedBtn) {
+					switch(btn)
+					{
 						case panBtn:
-							ToolTip.showToolTip(_instance, "Move map", 1000);
-							break;
-						case saveBtn:
-							ToolTip.showToolTip(_instance, "Save map", 1000);
-							break;
-						case prefBtn:
-							ToolTip.showToolTip(_instance, "Preferences", 1000);
-							break;
-					}
-					break;
-				case MouseEvent.MOUSE_OUT:
-					ToolTip.hideToolTip();
-					break;
-			}
-		}
-		
-		private static function overNodeButtonListener(e : MouseEvent) : void {
-			switch(e.type) 
-			{
-				case MouseEvent.MOUSE_OVER:
-					visibleAllDropDownButtons("node", true);
-					switch(e.target) {
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.MOVE_MAP));
+						break;
 						case moveNodeBtn:
-							ToolTip.showToolTip(_instance, "Move node", 1000);
-							break;
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.MOVE_NODE));
+						break;
 						case addNodeBtn:
-							ToolTip.showToolTip(_instance, "Add node", 1000);
-							break;
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.ADD_NODE));
+						break;
 						case delNodeBtn:
-							ToolTip.showToolTip(_instance, "Delete node", 1000);
-							break;
-					}
-					break;
-				case MouseEvent.MOUSE_OUT:
-					visibleAllDropDownButtons("node", false);
-					displayedButton["node"].visible = true;
-					ToolTip.hideToolTip();
-					break;
-			}
-		}
-		
-		private static function overEdgeButtonListener(e : MouseEvent) : void {
-			switch(e.type) {
-				case MouseEvent.MOUSE_OVER:
-					visibleAllDropDownButtons("edge", true);
-					switch(e.target) {
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.DEL_NODE));
+						break;
 						case addEdgeBtn:
-							ToolTip.showToolTip(_instance, "Add edge", 1000);
-							break;
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.ADD_EDGE));
+						break;
 						case delEdgeBtn:
-							ToolTip.showToolTip(_instance, "Delete edge", 1000);
-							break;
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.DEL_EDGE));
+						break;
 					}
-					break;
-				case MouseEvent.MOUSE_OUT:
-					visibleAllDropDownButtons("edge", false);
-					displayedButton["edge"].visible = true;
-					ToolTip.hideToolTip();
-					break;
-			}
-		}
-
-		private static function clickOnButtonListener(e : MouseEvent) : void {
-
-			function selectBtn() : void {
-				selectedButton.selected = false;
-				selectedButton = (e.target as Button);
-				selectedButton.selected = true;
-			}
-			
-			switch(e.target) {
-				case panBtn:
-					selectBtn();
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.MOVE_MAP, false, false));
-					break;
-				case moveNodeBtn:
-					selectBtn();
-					setUpDropDownButton("node", selectedButton);
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.MOVE_NODE, false, false));
-					break;
-				case addNodeBtn:
-					selectBtn();
-					setUpDropDownButton("node", selectedButton);
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.ADD_NODE, false, false));
-					break;
-				case delNodeBtn:
-					selectBtn();
-					setUpDropDownButton("node", selectedButton);
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.DEL_NODE, false, false));
-					break;
-				case addEdgeBtn:
-					selectBtn();
-					setUpDropDownButton("edge", selectedButton);
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.ADD_EDGE, false, false));
-					break;
-				case delEdgeBtn:
-					selectBtn();
-					setUpDropDownButton("edge", selectedButton);
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.DEL_EDGE, false, false));
-					break;
-				case saveBtn:
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.SAVE_DATA, false, false));
-					break;
-				case prefBtn:
-					_instance.dispatchEvent(new ToolBarEvent(ToolBarEvent.OPEN_PREF, false, false));
-					break;
+					currentSelectedBtn.selected = false;
+					currentSelectedBtn = btn;
+				}
+				btn.selected = true;
+			} else {
+				switch(e.target as Button)
+				{
+					case saveBtn:
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.SAVE_DATA));
+						break;
+					case prefBtn:
+						dispatchEvent(new ToolBarEvent(ToolBarEvent.OPEN_PREF));
+						break;
+				}
 			}
 		}
 		
-		private function changeScaleListener(e : Event) : void 
-		{
-			var v : String = (e.target as ComboBox).value;
-			switch(v) 
-			{
-				case "25%":
-					dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP, false, false, 0.25));
-					break;
-				case "50%":
-					dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP, false, false, 0.5));
-					break;
-				case "75%":
-					dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP, false, false, 0.75));
-					break;
-				case "100%":
-					dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP, false, false, 1));
-					break;
-				case "200%":
-					dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP, false, false, 2));
-					break;
-				case "300%":
-					dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP, false, false, 3));
-					break;
-				case "400%":
-					dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP, false, false, 4));
-					break;
-			}
+		private function changeScaleHandler(e:IndexChangeEvent):void {
+			dispatchEvent(new ToolBarEvent(ToolBarEvent.SCALE_MAP,
+				scaleBox.selectedItem.delta));
 		}
 	}
 }

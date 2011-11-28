@@ -14,46 +14,62 @@ if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 */
 package darkemon.display {
 	
+	import darkemon.ui.NodeMenu;
+	
 	import flash.display.DisplayObject;
-	import flash.display.MovieClip;
 	import flash.display.Sprite;
-	import flash.display.Loader;
-	
-	import flash.net.URLRequest;
-	
 	import flash.events.Event;
-	import flash.events.IOErrorEvent;
 	import flash.events.MouseEvent;
 	
-	public class MainScene extends MovieClip {
+	import mx.collections.ArrayCollection;
+	import mx.controls.Alert;
+	import mx.core.UIComponent;
+	
+	import spark.components.Image;
+	import spark.effects.Animate;
+	import spark.effects.animation.MotionPath;
+	import spark.effects.animation.SimpleMotionPath;
+	
+	public class MainScene extends UIComponent {
 		
 	//--------------------------------------
 	//  Properties
 	//--------------------------------------
 		
-		private var pictLayer : MovieClip = new MovieClip();
-		private var edgeLayer : MovieClip = new MovieClip();
-		private var nodeLayer : MovieClip = new MovieClip();
+		private var _hitArea:Sprite = new Sprite();
+		private var container:UIComponent = new UIComponent();
+		private var pictLayer:Image = new Image();
+		private var gridLayer:UIComponent = new UIComponent();
+		private var edgeLayer:UIComponent = new UIComponent();
+		private var nodeLayer:UIComponent = new UIComponent();
 		
 	//--------------------------------------
 	//  Constructor
 	//--------------------------------------
 		
 		public function MainScene() {
-			addChild(pictLayer);    // layer 0
-			addChild(edgeLayer);    // layer 1
-			addChild(nodeLayer);    // layer 2
+			_hitArea.mouseEnabled = false;
+			pictLayer.mouseEnabled = false;
+			gridLayer.mouseEnabled = false;
+			container.addChild(pictLayer);    // layer 0
+			container.addChild(gridLayer);    // layer 1
+			container.addChild(edgeLayer);    // layer 2
+			container.addChild(nodeLayer);    // layer 3
+			addChild(container);
+			addChild(_hitArea);
+			addEventListener(Event.RESIZE, resizeHandler);
+			addEventListener(MouseEvent.MOUSE_DOWN, mouseDownListener);
 		}
 		
 	//--------------------------------------
 	//  Public Methods
 	//--------------------------------------
 	
-		public function getEdgeLayer() : MovieClip { return edgeLayer; }
-		public function getNodeLayer() : MovieClip { return nodeLayer; }
+		public function getEdgeLayer(): UIComponent { return edgeLayer; }
+		public function getNodeLayer(): UIComponent { return nodeLayer; }
 		
-		public function setActive(active : Boolean) : void {
-			if(active) {
+		public function set draggable(flag:Boolean):void {
+			if(flag) {
 				addEventListener(MouseEvent.MOUSE_DOWN, mouseListener);
 				addEventListener(MouseEvent.MOUSE_UP, mouseListener);
 			} else {
@@ -62,46 +78,62 @@ package darkemon.display {
 			}
 		}
 		
-		public function setBackground(picture : DisplayObject) : void {
-			clearBackground();
-			pictLayer.addChild(picture);
+		public function set zoom(z:Number):void {
+			container.scaleX = z;
+			container.scaleY = z;
+		}
+
+		public function get sceneX():Number { return container.x; }
+		
+		public function set sceneX(_x:Number):void {
+			container.x = _x;
 		}
 		
-		public function loadBackgroundURL(url : URLRequest) : void {
-			var loader : Loader = new Loader();
-			loader.contentLoaderInfo.addEventListener(Event.INIT, initListener);
-			loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, errorListener);
-			loader.load(url);
+		public function get sceneY():Number { return container.y; }
+		
+		public function set sceneY(_y:Number):void {
+			container.y = _y;
+		}
+		
+		public function setBackgroundImage(img:Object):void {
+			pictLayer.source = img;
+			if(img != null) {
+				pictLayer.x = pictLayer.y = 0;
+				pictLayer.height = pictLayer.sourceHeight;
+				pictLayer.width = pictLayer.sourceWidth;
+			}
+		}
+		
+		public function hasBackgroundImage():Boolean {
+			if(pictLayer.source != null) return true;
+			else return false;
+		}
+		
+		public function clearNodeLayer():void {
+			while(nodeLayer.numChildren != 0) {
+				nodeLayer.removeChildAt(0);
+			}
+		}
+		
+		public function showNodeInCenter(nodeX:Number, nodeY:Number):void {
+			// Add animation.
+			var anim:Animate = new Animate();
+			var xPath:SimpleMotionPath = new SimpleMotionPath();
+			var yPath:SimpleMotionPath = new SimpleMotionPath();
+			xPath.property = "x";
+			yPath.property = "y";
+						
+			var motionPaths:Vector.<MotionPath> = new Vector.<MotionPath>();
+			motionPaths.push(xPath);
+			motionPaths.push(yPath);
+			anim.motionPaths = motionPaths;
+			anim.duration = 500;
+			anim.target = container;
 			
-			function initListener(e : Event) : void {
-				clearBackground();
-				pictLayer.addChild(loader.content);
-			}
-			
-			function errorListener(e : IOErrorEvent) : void {
-				trace("darkemon::display::MainScene::loadBackgroundURL\n"+e.text);
-			}
-		}
-		
-		public function clearBackground() : void {
-			try {
-				pictLayer.removeChildAt(0);
-			}
-			catch(e:Error) 
-			{
-			}
-		}
-		
-		public function hasBackground() : Boolean {
-			try 
-			{
-				pictLayer.getChildAt(0);
-			}
-			catch(e:Error)
-			{
-				return false;
-			}
-			return true;
+			// Move scene.
+			xPath.valueBy = _hitArea.width/2 - (nodeX + container.x);
+			yPath.valueBy = _hitArea.height/2 - (nodeY + container.y);
+			anim.play();
 		}
 		
 	//--------------------------------------
@@ -109,16 +141,34 @@ package darkemon.display {
 	//--------------------------------------
 		
 		// The mouse events listener.
-		private function mouseListener(e : MouseEvent) : void {
+		private function mouseListener(e:MouseEvent):void {
 			switch(e.type)
 			{
 				case MouseEvent.MOUSE_DOWN:
-					startDrag();
+					container.startDrag();
 					break;
 				case MouseEvent.MOUSE_UP:
-					stopDrag();
+					container.stopDrag();
 					break;
 			}
+		}
+		
+		private function mouseDownListener(e:MouseEvent):void {
+			if(!(e.target is Node)) {
+				// unselect nodes
+				Node.unselectAll();
+				// hide opened node menu
+				if(NodeMenu.visible) NodeMenu.hide();
+			}
+		}
+		
+		private function resizeHandler(e:Event):void {
+			_hitArea.graphics.clear();
+			_hitArea.graphics.beginFill(0XFFFFFF);
+			_hitArea.graphics.lineStyle(0, 0XFFFFFF);
+			_hitArea.graphics.drawRect(0, 0, width, height);
+			_hitArea.graphics.endFill();
+			_hitArea.alpha = 0;
 		}
 	}
 }

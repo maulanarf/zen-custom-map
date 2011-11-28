@@ -16,10 +16,11 @@ package darkemon.events {
 	import flash.events.Event;
 		
 	public class NodeEvent extends Event {
-		public static const OPEN_PREF : String = "openPreferences";
-		public static const OPEN_LIBRARY : String = "openLibrary";
-		public static const OPEN_LINK : String = "openLink";
-		public static const DOUBLE_CLICK : String = "doubleClick";
+		public static const OPEN_PREF:String = "openPreferences";
+		public static const OPEN_LIBRARY:String = "openLibrary";
+		public static const OPEN_EVENTS:String = "openEvents";
+		public static const OPEN_SUBMAP:String = "openSubMap";
+		public static const DOUBLE_CLICK:String = "doubleClick";
 	
 		public function NodeEvent(type : String, 
 				bubbles : Boolean = false, 

@@ -16,45 +16,36 @@ package darkemon.events {
 	import flash.events.Event;
 		
 	public class ToolBarEvent extends Event {
-		public static const MOVE_MAP : String = "moveMap";
-		public static const MOVE_NODE : String = "moveNode";
-		public static const ADD_NODE : String = "addNode";
-		public static const DEL_NODE : String = "delNode";
-		public static const ADD_EDGE : String = "addEdge";
-		public static const DEL_EDGE : String = "delEdge";
-		public static const SAVE_DATA : String = "saveData";
-		public static const OPEN_PREF : String = "openPref";
-		public static const SCALE_MAP : String = "scaleMap";
+		public static const MOVE_MAP:String = "moveMap";
+		public static const MOVE_NODE:String = "moveNode";
+		public static const ADD_NODE:String = "addNode";
+		public static const DEL_NODE:String = "delNode";
+		public static const ADD_EDGE:String = "addEdge";
+		public static const DEL_EDGE:String = "delEdge";
+		public static const SAVE_DATA:String = "saveData";
+		public static const OPEN_PREF:String = "openPref";
+		public static const SCALE_MAP:String = "scaleMap";
 		
-		private var _mapScale : Number;
+		private var _mapScale:Number;
 
-		public function ToolBarEvent(type : String, 
-				bubbles : Boolean = false, 
-				cancelable : Boolean = false,
-				mapScale : Number = 0) 
+		public function ToolBarEvent(type:String, mapScale:Number=1, 
+			bubbles:Boolean=false, cancelable:Boolean=false) 
 		{
 			super(type, bubbles, cancelable);
 			_mapScale = mapScale;
 		}
 		
-		public function get mapScale() : Number 
-		{ 
+		public function get mapScale():Number { 
 			return _mapScale; 
 		}
-		
-		public function set mapScale(mapScale : Number) : void 
-		{ 
-			_mapScale = mapScale; 
-		}
-		
-		override public function toString() : String {
+				
+		override public function toString():String {
 	        return formatToString("ToolBarEvent", "type", "bubbles", "cancelable",
-                    "eventPhase",
                     "mapScale");
 		}
 		
-		override public function clone() : Event {
-        	return new ToolBarEvent(type, bubbles, cancelable, mapScale);
+		override public function clone():Event {
+        	return new ToolBarEvent(type, _mapScale, bubbles, cancelable);
 		}
 	}
 }

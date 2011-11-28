@@ -13,134 +13,97 @@ You should have received a copy of the GNU General Public License along with thi
 if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 package darkemon.display {
+	import mx.core.FlexGlobals;
+	import mx.managers.CursorManager;
 	
-	import flash.display.MovieClip;
-	import flash.display.Stage;
-	import flash.ui.Mouse;
-	
-	import flash.events.Event;
-	
-	public class Arrow extends MovieClip {
+	public class Arrow {
 		
 	//--------------------------------------
 	//  Properties
 	//--------------------------------------
 		
-		public static const NONE : String = "none";
-		public static const GRAB : String = "grab";
-		public static const ADD : String = "add";
-		public static const DELETE : String = "delete";
-		public static const SELECT_FIRST : String = "selectFirst";
-		public static const SELECT_SECOND : String = "selectSecond";
+		public static const NONE:String = "none";
+		public static const GRAB:String = "grab";
+		public static const ADD:String = "add";
+		public static const DELETE:String = "delete";
+		public static const SELECT_FIRST:String = "selectFirst";
+		public static const SELECT_SECOND:String = "selectSecond";
+
+		private static var _visible:Boolean = false;
+		private static var _currentCursor:Class = null;
 		
-		private static var _instance : Arrow = null;
-		private static var _allowInstantiation : Boolean = false;
-		private static var _isVisible : Boolean = false;
-		private static var _curArrow : String = GRAB;
+		[Embed(source="assets/hand-grab-cursor.swf")]
+		private static var handGrabCursor:Class;
+		
+		[Embed(source="assets/add-cursor.png")]
+		private static var addCursor:Class;
+		
+		[Embed(source="assets/delete-cursor.png")]
+		private static var deleteCursor:Class;
 		
 	//--------------------------------------
 	//  Constructor
 	//--------------------------------------
 		
 		public function Arrow() {
-			if(!_allowInstantiation) {
-				throw Error("Arrow is a singleton class, use getInstance() instead.");
-			}
-			stop();
+			throw Error("Arrow is a singleton class, use show() instead.");
 		}
 		
 	//--------------------------------------
 	//  Public Methods
 	//--------------------------------------
 	
-		public static function getInstance() : Arrow {
-			if(!_instance) {
-				_allowInstantiation = true;
-				_instance = new Arrow();
-				_allowInstantiation = false;
-			}
-			return _instance;
-		}
-		
-		public static function isVisible() : Boolean {
-			return _isVisible;
-		}
-		
-		public static function show(container : MovieClip) : void {
-			if(_instance == null) {
-				getInstance();
-			}
-			var _stage : Stage = container.stage;
-			_stage.addEventListener(Event.RENDER, _instance.onTopHandler);
-			_stage.addChildAt(_instance, Math.max(_stage.numChildren-1,0));
-			_instance.addEventListener(Event.ENTER_FRAME, _instance.enterFrameHandler);
-			_isVisible = true;
-			
-			_instance.updateArrow(_curArrow);
-		}
-		
-		public static function hide() : void {
-			if(_isVisible) {
-				var _stage : Stage = _instance.parent.stage;
-				Mouse.show();
-				_stage.removeChild(_instance);
-				_stage.removeEventListener(Event.RENDER, _instance.onTopHandler);
-				_instance.removeEventListener(Event.ENTER_FRAME, _instance.enterFrameHandler);
-				_isVisible = false;
-			}
-		}
-		
-		public static function get arrow() : String { return _curArrow; }
-		public static function set arrow(a : String) : void { 
-			_curArrow = a; 
-			if(_isVisible) _instance.updateArrow(_curArrow);
-		}
-		
-	//--------------------------------------
-	//  Private Methods
-	//--------------------------------------
-	
-		private function updateArrow(a : String) : void {
-			switch(_curArrow)
+		public static function set mode(m:String):void {
+			switch(m)
 			{
 				case GRAB:
-					Mouse.hide();
-					_instance.gotoAndStop(1);
+					_currentCursor = handGrabCursor;
 					break;
 				case ADD:
-					Mouse.show();
-					_instance.gotoAndStop(2);
+					_currentCursor = addCursor;
 					break;
 				case DELETE:
-					Mouse.show();
-					_instance.gotoAndStop(3);
+					_currentCursor = deleteCursor;
 					break;
 				case SELECT_FIRST:
-					Mouse.show();
-					_instance.gotoAndStop(4);
+					_currentCursor = null;
 					break;
 				case SELECT_SECOND:
-					Mouse.show();
-					_instance.gotoAndStop(5);
+					_currentCursor = null;
 					break;
 				case NONE:
-					Mouse.show();
-					_instance.gotoAndStop(6);
+					_currentCursor = null;
 					break;
+				default:
+					_currentCursor = null;
+					CursorManager.removeAllCursors();
+					break;
+			}
+			if(_visible) {
+				hide();
+				show();
 			}
 		}
 		
-	//--------------------------------------
-	//  Handlers
-	//--------------------------------------
-	
-		private function onTopHandler(e : Event) : void {
-			_instance.parent.stage.setChildIndex(_instance, Math.max(_instance.parent.stage.numChildren-1,0));
+		public static function show():void {
+			_visible = true;
+			if(_currentCursor == null) CursorManager.removeAllCursors();
+			else CursorManager.setCursor(_currentCursor);
 		}
 		
-		private function enterFrameHandler(e : Event) : void {
-			_instance.x = _instance.parent.stage.mouseX;
-			_instance.y = _instance.parent.stage.mouseY;
+		public static function hide():void {
+			_visible = false;
+			CursorManager.removeCursor(CursorManager.currentCursorID);
+		}
+		
+		public static function set busySystem(flag:Boolean):void {
+			if(flag) {
+				CursorManager.setBusyCursor();
+				FlexGlobals.topLevelApplication.enabled = false;
+			} else {
+				CursorManager.removeBusyCursor();
+				FlexGlobals.topLevelApplication.enabled = true;
+			}
 		}
 	}
 }
