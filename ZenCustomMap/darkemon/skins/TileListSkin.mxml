@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark" 
+				autoDrawBackground="true">
+	<fx:Script>
+		<![CDATA[
+			import mx.core.IVisualElement;
+			
+			import spark.components.Image;
+			import spark.components.Label;
+			
+			[Bindable("dataChanged")]
+			
+			/**
+			 * @private
+			 */
+			override public function set data(value:Object):void
+			{
+				super.data = value;
+				
+				//First lets remove everything from the contentGroup
+				contentGroup.removeAllElements();
+				
+				var imgContainer:Group = new Group();
+				imgContainer.setConstraintValue("verticalCenter", 0);
+				imgContainer.setConstraintValue("horizontalCenter", 0);
+				imgContainer.addElement(value.source);
+				
+				contentGroup.addElement(imgContainer);
+				labelDisplay.text = value.label;
+			}
+		]]>
+	</fx:Script>
+	
+	<!--- The container used to wrap each Flex component defined in the host component. -->
+	<s:Group id="contentGroup" left="2" right="2" top="0" bottom="80" verticalCenter="0"/>
+	<s:Label id="labelDisplay" height="20" textAlign="center" verticalAlign="middle"
+			 bottom="2" left="0" right="0" horizontalCenter="0" backgroundColor="0x74d4cc"/>
+</s:ItemRenderer>

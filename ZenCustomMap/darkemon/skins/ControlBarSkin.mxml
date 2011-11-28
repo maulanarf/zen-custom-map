@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:mx="library://ns.adobe.com/flex/mx">
+	<!-- host component -->
+	<fx:Metadata>
+		[HostComponent("spark.components.supportClasses.SkinnableComponent")]
+	</fx:Metadata>
+	
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="disabled" />
+	</s:states>
+	
+	<!-- layer 0: control bar highlight -->
+	<s:Rect left="0" right="0" top="0" bottom="1" >
+		<s:stroke>
+			<s:LinearGradientStroke rotation="90" weight="1">
+				<s:GradientEntry color="0xFFFFFF" />
+				<s:GradientEntry color="0xD8D8D8" />
+			</s:LinearGradientStroke>
+		</s:stroke>
+	</s:Rect>
+			
+	<!-- layer 1: control bar fill -->
+	<s:Rect left="1" right="1" top="1" bottom="2" >
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="0xEDEDED" />
+				<s:GradientEntry color="0xCDCDCD" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+			
+	<!-- layer 2: control bar divider line -->
+	<s:Rect left="0" right="0" bottom="0" height="1" alpha="0.55">
+		<s:fill>
+			<s:SolidColor color="0x000000" />
+		</s:fill>
+	</s:Rect>
+
+	<!--- @copy spark.components.SkinnableContainer#contentGroup -->
+	<s:Group id="contentGroup" minWidth="0" minHeight="0"
+			 left="6" right="2" top="4" bottom="2"/>
+</s:Skin>
